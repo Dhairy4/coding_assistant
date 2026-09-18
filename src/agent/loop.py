@@ -3,41 +3,41 @@ from dotenv import load_dotenv
 from langchain_core.tools import tool
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import HumanMessage, SystemMessage, ToolMessage
+from langchain_nvidia_ai_endpoints import ChatNVIDIA
 
+import sys
+from pathlib import Path
+
+# # Ensure project root is in sys.path when script is executed directly
+# sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
+
+# import tools
+from src.tools.file_tool import read_file
+from src.tools.bash_exec import run_bash
 #1 load api keys 
 
 load_dotenv()
 
-# 2 simple tool
 
-@tool
-def add(a :int, b : int) -> int: 
-    """ add  two numbers """
-    print(f"[Tool Excecuted] adding {a} and {b}")   
-    return a + b
-
-@tool
-def multiply(a :int, b : int) -> int: 
-    """ multiply  two numbers """
-    print(f"[Tool Excecuted] multiplying {a} and {b}")   
-    return a * b
-
-
-
-
-availabel_tools = {"add" : add, 
-                   "multiply" : multiply}
+available_tools = {
+    "read_file": read_file,
+    "run_bash": run_bash
+}
 
 
 # 3 setup the model and bound the tools
-llm = ChatGoogleGenerativeAI(
-    model="gemini-3.6-flash"
+# llm = ChatGoogleGenerativeAI(
+#     model="gemini-3.5-flash"
+# )
+
+llm = ChatNVIDIA(
+    model = "nvidia/nemotron-3-super-120b-a12b"
 )
 
-llm_with_tools = llm.bind_tools(list(availabel_tools.values()))
+llm_with_tools = llm.bind_tools(list(available_tools.values()))
 
 # 4 agent loop
-def simple_agent_loop(user_prompt: str):
+def agent_loop(user_prompt: str):
     print(f"starting loop for {user_prompt}")
     messages = [HumanMessage(content=user_prompt)]
 
@@ -67,8 +67,8 @@ def simple_agent_loop(user_prompt: str):
 
             # look up tools directly from tools map
 
-            if tool_name in availabel_tools:
-                tool_output = availabel_tools[tool_name].invoke(tool_args)
+            if tool_name in available_tools:
+                tool_output = available_tools[tool_name].invoke(tool_args)
 
             else : 
                 tool_output = f"Tool {tool_name} not found"
@@ -78,5 +78,5 @@ def simple_agent_loop(user_prompt: str):
         turn += 1
 
 if __name__ == "__main__":
-    user_prompt = "I want to subtract call the subtract tool with arguments 5 and 10 and then multiply the result by 2"
-    simple_agent_loop(user_prompt)
+    user_prompt = "can you run the test1.py file and tell me the output"
+    agent_loop(user_prompt)
