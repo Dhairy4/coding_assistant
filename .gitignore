@@ -12,3 +12,7 @@ wheels/
 
 #env variables 
 .env
+
+# Local environment files
+.env.*
+!.env.example
